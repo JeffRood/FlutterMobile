@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../scoped-models/main.dart';
+import 'package:scoped_model/scoped_model.dart';
 import '../widgets/products/products.dart';
 
 
 class ProductsPage extends StatelessWidget {
-final List<Map<String,dynamic>> products;
-ProductsPage(this.products);
+
 
 
 Widget _buildSideDrawer(BuildContext context) {
@@ -36,15 +37,23 @@ Widget _buildSideDrawer(BuildContext context) {
       appBar: AppBar(
         title: Text('Sisalril App'),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.favorite),
+        
+        ScopedModelDescendant<MainModel>(
+      builder: (BuildContext context, Widget child, MainModel model) {
+
+          return   IconButton(
+            icon: Icon(model.displayFavoritesOnly ? Icons.favorite : Icons.favorite_border),
             color: Colors.blue,
-            onPressed: () {},
-          )
+            onPressed: () {
+              model.toggleDisplayModel();
+            },
+          );
+      } ),
+     
         ],
         centerTitle: true,
       ),
-      body: Products(products),
+      body: Products(),
     );
   }
 }

@@ -1,32 +1,72 @@
 import 'package:flutter/material.dart';
 import './product_edit.dart';
-class ProductListPage extends StatelessWidget {
- final Function updateProduct;
-  final List<Map<String, dynamic>> products;
+import 'package:scoped_model/scoped_model.dart';
+import '../scoped-models/main.dart';
 
-  ProductListPage(this.products, this.updateProduct);
+class ProductListPage extends StatelessWidget {
+
+Widget _buildEditButton(BuildContext context, int index, MainModel model) {
+  return  IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () {
+                   model.selectProduct(index);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) {
+                          return ProductEditPage(
+
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+                    
+}
+
 
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return ListView.builder(
+    return ScopedModelDescendant<MainModel>(
+                    builder: (BuildContext build, Widget child, MainModel model ){
+                return ListView.builder(
       itemBuilder: (BuildContext context, int index) {
-        return ListTile(
-          leading: Image.asset(products[index]['image']),
-          title: Text(products[index]['title']),
-          trailing: IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (BuildContext context) {
-                      return ProductEditPage( product:products[index], updateProduct: updateProduct, productIndex: index,);
+        return Dismissible(
+          key: Key(model.products[index].title),
+          onDismissed: (DismissDirection direction){
+          if(direction == DismissDirection.endToStart) {
+            model.selectProduct(index);
+             model.deleteProduct();
+          } else if(direction == DismissDirection.startToEnd) { 
+              print('Swiped Start to end');
 
-                  }));
-            },
+          } else {
+            print('other swiping');
+          }
+            } ,
+          background: Container(color: Colors.red,),
+          child: Column(
+            children: <Widget>[
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundImage: AssetImage(model.allProducts[index].image),
+                ),
+                title: Text(model.allProducts[index].title),
+                subtitle: Text('\$${model.allProducts[index].price.toString()}'),
+                trailing: _buildEditButton(context,index,model)
+              ),
+              Divider()
+            ],
           ),
         );
       },
-      itemCount: products.length,
+      itemCount: model.allProducts.length,
     );
+                    },);
+    
+    
+    
+    
   }
 }
