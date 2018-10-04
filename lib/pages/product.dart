@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../scoped-models/main.dart';
-import 'package:scoped_model/scoped_model.dart';
 import '../widgets/ui_elements/title_default.dart';
 import '../models/product.dart';
 
 class ProductPage extends StatelessWidget {
-  final int productIndex;
+  final Product product;
+ProductPage(this.product);
 
-  ProductPage(this.productIndex);
 
   Widget _buildAdressPriceRow(double price) {
     return Row(
@@ -36,10 +34,7 @@ class ProductPage extends StatelessWidget {
     return WillPopScope(onWillPop: () {
       Navigator.pop(context, false);
       return Future.value(false);
-    }, child: ScopedModelDescendant<MainModel>(
-      builder: (BuildContext context, Widget child, MainModel model) {
-        Product product = model.products[productIndex];
-        return Scaffold(
+    }, child:  Scaffold(
           appBar: AppBar(
             title: Text(product.title),
             // Centra;
@@ -50,7 +45,11 @@ class ProductPage extends StatelessWidget {
             // mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Image.asset(product.image),
+                    FadeInImage(
+              image: NetworkImage(product.image),
+              height: 300.0,
+              fit: BoxFit.cover,
+              placeholder: AssetImage('assets/login_background.jpg')),
               Container(
                 padding: EdgeInsets.all(10.0),
                 child: TitleDefault(product.title),
@@ -66,8 +65,7 @@ class ProductPage extends StatelessWidget {
               )
             ],
           ),
-        );
-      },
-    ));
+    ),
+    );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './models/product.dart';
 import './pages/auth.dart';
 import './pages/productsAdmin.dart';
 import './pages/products.dart';
@@ -24,8 +25,9 @@ class _MyAppState extends State<MyApp> {
   
   @override
   Widget build(context) {
+   final MainModel model  = MainModel();
     return ScopedModel<MainModel>(
-       model: MainModel(),
+       model: model,
       child:
     MaterialApp(
       theme: ThemeData(
@@ -39,9 +41,9 @@ class _MyAppState extends State<MyApp> {
       // home: AuthPage(),
       routes: {
         '/': (BuildContext context) => AuthPage(),
-        '/products': (BuildContext context) => ProductsPage(),
+        '/products': (BuildContext context) => ProductsPage(model),
         '/admin': (BuildContext context) =>
-            ProductsAdminPage()
+            ProductsAdminPage(model)
       },
       // on generateRoute es una funcion para manejar rutas no registrada en las rutas de arriba
       onGenerateRoute: (RouteSettings setting) {
@@ -50,10 +52,13 @@ class _MyAppState extends State<MyApp> {
           return null;
         }
         if (pathElements[1] == 'product') {
-          final int index = int.parse(pathElements[2]);
+          final String productId= pathElements[2];
+         final Product product = model.allProducts.firstWhere((Product product) {
+            return product.id == productId;
+         });
           return MaterialPageRoute<bool>(
             builder: (BuildContext context) => 
-            ProductPage(index),
+            ProductPage(product),
           );
         }
         return null;
@@ -61,7 +66,7 @@ class _MyAppState extends State<MyApp> {
 
       onUnknownRoute: (RouteSettings settings) {
         return MaterialPageRoute(
-            builder: (BuildContext context) => ProductsPage());
+            builder: (BuildContext context) => ProductsPage(model));
       },
     ) );
     
