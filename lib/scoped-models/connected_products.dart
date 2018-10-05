@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../models/product.dart';
 import '../models/user.dart';
 import 'dart:async';
+import '../models/auth.dart';
 
 class ConnectedProductsModel extends Model {
   String url = 'https://flutter-products-cfe85.firebaseio.com/products';
@@ -11,8 +12,6 @@ class ConnectedProductsModel extends Model {
   String _selProductId;
   User _authenticatedUser;
   bool _isLoading = false;
-
- 
 }
 
 class ProductsModel extends ConnectedProductsModel {
@@ -54,7 +53,7 @@ class ProductsModel extends ConnectedProductsModel {
     _products.removeAt(selectedProductIndex);
     _selProductId = null;
     notifyListeners();
-   return http
+    return http
         .delete(url + '/' + deleteProductID + '.json')
         .then((http.Response response) {
       _isLoading = false;
@@ -62,12 +61,13 @@ class ProductsModel extends ConnectedProductsModel {
       notifyListeners();
       return true;
     }).catchError((error) {
-    _isLoading = false;
+      _isLoading = false;
       notifyListeners();
-        return false;
+      return false;
     });
   }
- Future<bool> addProduct(
+
+  Future<bool> addProduct(
       String title, String description, String image, double price) async {
     _isLoading = true;
     notifyListeners();
@@ -81,12 +81,12 @@ class ProductsModel extends ConnectedProductsModel {
       'userID': _authenticatedUser.id
     };
     try {
-    final http.Response response  =  await http
-        .post(url + '.json', body: json.encode(productData));
-     
+      final http.Response response =
+          await http.post(url + '.json', body: json.encode(productData));
+
       if (response.statusCode != 200 && response.statusCode != 201) {
-           _isLoading = false;
-      notifyListeners();
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
       final Map<String, dynamic> reponseData = json.decode(response.body);
@@ -103,21 +103,22 @@ class ProductsModel extends ConnectedProductsModel {
       _isLoading = false;
       notifyListeners();
       return true;
-   } catch(error) {
-    _isLoading = false;
+    } catch (error) {
+      _isLoading = false;
       notifyListeners();
-        return false;
-   }
+      return false;
+    }
     // .catchError((error) {
     // _isLoading = false;
     //   notifyListeners();
     //     return false;
     // });
   }
+
   Future<Null> fetctProduct() {
     _isLoading = true;
     notifyListeners();
-    return http.get(url + '.json').then<Null>((http.Response response) {
+    return http.get(url + '.json?auth=${_authenticatedUser.token}').then<Null>((http.Response response) {
       final List<Product> fetchedProductList = [];
       final Map<String, dynamic> productListData = json.decode(response.body);
       if (productListData == null) {
@@ -125,7 +126,7 @@ class ProductsModel extends ConnectedProductsModel {
         notifyListeners();
         return;
       }
-      productListData.forEach((String productID,  dynamic productData) {
+      productListData.forEach((String productID, dynamic productData) {
         final Product product = Product(
             id: productID,
             title: productData['title'],
@@ -141,9 +142,9 @@ class ProductsModel extends ConnectedProductsModel {
       notifyListeners();
       _selProductId = null;
     }).catchError((error) {
-    _isLoading = false;
+      _isLoading = false;
       notifyListeners();
-        return ;
+      return;
     });
   }
 
@@ -178,9 +179,9 @@ class ProductsModel extends ConnectedProductsModel {
 
       notifyListeners();
     }).catchError((error) {
-    _isLoading = false;
+      _isLoading = false;
       notifyListeners();
-        return false;
+      return false;
     });
   }
 
@@ -219,9 +220,49 @@ class ProductsModel extends ConnectedProductsModel {
 }
 
 class UsersModel extends ConnectedProductsModel {
-  void login(String email, String password) {
-    _authenticatedUser =
-        User(id: 'sasfasfdd', email: email, password: password);
+  Future<Map<String, dynamic>> authenticate(String email, String password,
+      [AuthMode mode = AuthMode.Login]) async {
+    _isLoading = true;
+    notifyListeners();
+    final Map<String, dynamic> authData = {
+      'email': email,
+      'password': password,
+      'returnSecureToken': true
+    };
+    http.Response response;
+    if (mode == AuthMode.Login) {
+      response = await http.post(
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyCAfpZp3RvS9rdw0KQHQnXEUkGy61Wp_pI',
+          body: json.encode(authData),
+          headers: {'content-type': 'application/json'});
+    } else {
+      response = await http.post(
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=AIzaSyCAfpZp3RvS9rdw0KQHQnXEUkGy61Wp_pI',
+          body: json.encode(authData),
+          headers: {'content-type': 'application/json'});
+    }
+
+    final Map<String, dynamic> responseData = json.decode(response.body);
+    bool hasError = true;
+    String message = 'Algo va mal, revisa la conexion a internet';
+    print(responseData);
+    if (responseData.containsKey('idToken')) {
+      hasError = false;
+      message = 'Autentificacion correctamente';
+      _authenticatedUser = User(
+          id: responseData['localId'],
+          email: email,
+          token: responseData['idToken:']);
+    } else if (responseData['error']['message'] == 'EMAIL_EXISTS') {
+      message = 'Este correo ya esta siendo utilizado';
+    } else if (responseData['error']['message'] == 'EMAIL_NOT_FOUND') {
+      message = 'Usuario o contraseña no son correcto';
+    } else if (responseData['error']['message'] == 'INVALID_PASSWORD') {
+      message = 'Usuario o contraseña no son correcto';
+    }
+    _isLoading = false;
+    notifyListeners();
+    return {'success': !hasError, 'message': message};
   }
 }
 
